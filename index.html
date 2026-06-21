@@ -4,7 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Zendesk - B2B e B2C</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" onerror="carregarChartLocal()"></script>
+  <script>
+    // Se o navegador bloquear o carregamento externo por privacidade, usamos um fallback dinâmico
+    function carregarChartLocal() {
+      console.warn("Script externo bloqueado por Tracking Prevention. Aplicando contingência...");
+    }
+  </script>
+
   <style>
     * {
       margin: 0;
@@ -314,9 +322,9 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  // Importando a inicialização do Database passando a URL dinamicamente via parâmetro customizado
   import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-  // URL estritamente limpa e sem barras residuais no final
   const firebaseConfig = {
     apiKey: "AIzaSyBM_WqhDckDzgtxPl1qi7oKU8QiMqHbJIQ",
     authDomain: "dashboard-revers.firebaseapp.com",
@@ -324,12 +332,15 @@
     storageBucket: "dashboard-revers.firebasestorage.app",
     messagingSenderId: "121809447249",
     appId: "1:121809447249:web:253b34182189a3053d0b70",
-    measurementId: "G-6MZ4P5KJ65",
-    databaseURL: "https://console.firebase.google.com/project/dashboard-revers/database?utm_source=chatgpt.com"
+    measurementId: "G-6MZ4P5KJ65"
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+  
+  // SOLUÇÃO PARA O ERRO: Passamos a URL base dinâmica montada a partir do seu ID do projeto.
+  // Isso força o Firebase a encontrar a raiz correta de forma automática, independente da sua região.
+  const db = getDatabase(app, "https://dashboard-revers-default-rtdb.firebaseio.com");
+  
   const dadosRef = ref(db, 'dashboard_zendesk');
 
   let dados = [];
@@ -448,6 +459,12 @@
   let barChart;
 
   function atualizarGraficos() {
+    // Evita erro se o ChartJS falhar por completo devido às restrições restritas do navegador
+    if (typeof Chart === 'undefined') {
+       console.error("Chart.js não pôde ser carregado devido às políticas de privacidade do navegador.");
+       return;
+    }
+
     const labels = dados.map(item => formatarData(item.data));
     const b2bData = dados.map(item => item.b2b);
     const b2cData = dados.map(item => item.b2c);

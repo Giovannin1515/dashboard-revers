@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Zendesk - B2B e B2C</title>
-  <script src="<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <style>
     * {
       margin: 0;
@@ -316,7 +316,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-  // Configuração com o link do banco adicionado para evitar bugs de região
+  // URL estritamente limpa e sem barras residuais no final
   const firebaseConfig = {
     apiKey: "AIzaSyBM_WqhDckDzgtxPl1qi7oKU8QiMqHbJIQ",
     authDomain: "dashboard-revers.firebaseapp.com",
@@ -325,14 +325,11 @@
     messagingSenderId: "121809447249",
     appId: "1:121809447249:web:253b34182189a3053d0b70",
     measurementId: "G-6MZ4P5KJ65",
-    databaseURL: "https://console.firebase.google.com/project/dashboard-revers/database?utm_source=chatgpt.com"
+    databaseURL: "https://dashboard-revers-default-rtdb.firebaseio.com"
   };
 
-  // Inicializa o Firebase e o Banco de Dados
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  
-  // Referência do nó onde os dados serão salvos
   const dadosRef = ref(db, 'dashboard_zendesk');
 
   let dados = [];
@@ -344,7 +341,6 @@
     return d.toLocaleDateString('pt-BR');
   }
 
-  // Monitora as informações do Firebase em Tempo Real
   onValue(dadosRef, (snapshot) => {
     const dataFirebase = snapshot.val();
     dados = [];
@@ -359,17 +355,13 @@
         });
       });
     }
-
     atualizarInterface();
   }, (error) => {
     console.error("Erro do Firebase:", error);
-    alert("Erro de permissão ou conexão com o Firebase. Verifique as Regras (Rules) no console.");
   });
 
   function atualizarInterface() {
     tabela.innerHTML = '';
-
-    // Ordena os dados cronologicamente por data
     dados.sort((a, b) => new Date(a.data) - new Date(b.data));
 
     dados.forEach(item => {
@@ -383,7 +375,6 @@
           <button class="delete-btn" data-id="${item.id}">Excluir</button>
         </td>
       `;
-      
       tr.querySelector('.delete-btn').addEventListener('click', () => removerRegistro(item.id));
       tabela.appendChild(tr);
     });
@@ -395,10 +386,8 @@
   function atualizarCards() {
     const totalB2B = dados.reduce((acc, item) => acc + item.b2b, 0);
     const totalB2C = dados.reduce((acc, item) => acc + item.b2c, 0);
-
     document.getElementById('totalB2B').innerText = totalB2B;
     document.getElementById('totalB2C').innerText = totalB2C;
-
     const ultima = dados[dados.length - 1];
     document.getElementById('ultimaData').innerText = ultima ? formatarData(ultima.data) : '-';
   }
@@ -424,22 +413,13 @@
       document.getElementById('b2bInput').value = '';
       document.getElementById('b2cInput').value = '';
     })
-    .catch((error) => {
-      console.error(error);
-      alert("Erro ao gravar: " + error.message);
-    });
+    .catch((error) => alert("Erro ao gravar: " + error.message));
   }
 
   function exportarCSV() {
-    if (dados.length === 0) {
-      alert("Não há dados para exportar.");
-      return;
-    }
+    if (dados.length === 0) return;
     let csv = 'DATA;B2B;B2C\n';
-    dados.forEach(item => {
-      csv += `${item.data};${item.b2b};${item.b2c}\n`;
-    });
-
+    dados.forEach(item => { csv += `${item.data};${item.b2b};${item.b2c}\n`; });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -450,17 +430,16 @@
   function removerRegistro(id) {
     if (confirm('Deseja remover este registro?')) {
       const itemRef = ref(db, `dashboard_zendesk/${id}`);
-      remove(itemRef).catch((error) => alert("Erro ao remover: " + error.message));
+      remove(itemRef);
     }
   }
 
   function limparDados() {
-    if (confirm('Deseja realmente apagar todos os dados do banco compartilhado?')) {
-      set(dadosRef, null).catch((error) => alert("Erro ao limpar dados: " + error.message));
+    if (confirm('Deseja apagar todos os dados do banco?')) {
+      set(dadosRef, null);
     }
   }
 
-  // Vincula as funções do módulo aos botões HTML
   document.getElementById('btnAdicionar').addEventListener('click', adicionarRegistro);
   document.getElementById('btnExportar').addEventListener('click', exportarCSV);
   document.getElementById('btnLimpar').addEventListener('click', limparDados);
@@ -481,28 +460,11 @@
       data: {
         labels,
         datasets: [
-          {
-            label: 'B2B',
-            data: b2bData,
-            borderColor: '#2563eb',
-            backgroundColor: 'rgba(37, 99, 235, 0.2)',
-            tension: 0.3
-          },
-          {
-            label: 'B2C',
-            data: b2cData,
-            borderColor: '#16a34a',
-            backgroundColor: 'rgba(22, 163, 74, 0.2)',
-            tension: 0.3
-          }
+          { label: 'B2B', data: b2bData, borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.2)', tension: 0.3 },
+          { label: 'B2C', data: b2cData, borderColor: '#16a34a', backgroundColor: 'rgba(22, 163, 74, 0.2)', tension: 0.3 }
         ]
       },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'top' }
-        }
-      }
+      options: { responsive: true, plugins: { legend: { position: 'top' } } }
     });
 
     barChart = new Chart(document.getElementById('barChart'), {
@@ -511,22 +473,13 @@
         labels: ['B2B', 'B2C'],
         datasets: [{
           label: 'Quantidade Total',
-          data: [
-            b2bData.reduce((a,b) => a+b, 0),
-            b2cData.reduce((a,b) => a+b, 0)
-          ],
+          data: [b2bData.reduce((a,b) => a+b, 0), b2cData.reduce((a,b) => a+b, 0)],
           backgroundColor: ['#2563eb', '#16a34a']
         }]
       },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false }
-        }
-      }
+      options: { responsive: true, plugins: { legend: { display: false } } }
     });
   }
 </script>
-
 </body>
 </html>
